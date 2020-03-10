@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 
-	"../config"
 	"../crypto"
 )
 
@@ -14,13 +13,24 @@ import (
 type Client struct {
 	SecretKey []byte
 	Ports     []uint16
-	PeerList  []config.Peer
+	PeerList  []Peer
 
 	//Callback handles incoming packets (packet sender, packet id, content)
-	Callback *func(*config.Peer, uint64, []byte)
+	Callback *func(*Peer, uint64, []byte)
 
 	conn  *net.UDPConn
 	nonce []byte
+}
+
+//Peer refers to another spear user
+type Peer struct {
+	PK   []byte `json:"pk"`
+	Host string
+	// A list of possible ports
+	Ports []int
+	//Port the peer is currently using
+	CurrentAddr *net.UDPAddr
+	IsNotKnown  bool
 }
 
 //BindPort binds the client to one of the port in Ports, and returns the bound port, this should be called before all operation done on the client
@@ -59,9 +69,8 @@ func (c *Client) StartListening() {
 
 		sender := c.searchPeerByPk(pk)
 		if sender == nil {
-			sender = new(config.Peer)
-			sender.PK = *new(config.Key)
-			sender.PK.Bytes = pk
+			sender = new(Peer)
+			sender.PK = pk
 			sender.CurrentAddr = addr
 			sender.IsNotKnown = true
 		}
@@ -71,8 +80,8 @@ func (c *Client) StartListening() {
 }
 
 //SendRawPacket sends a raw packet to a peer
-func (c *Client) SendRawPacket(peer *config.Peer, raw []byte) {
-	packet := crypto.EncryptBytes(peer.PK.Bytes, c.SecretKey, raw, c.nonce)
+func (c *Client) SendRawPacket(peer *Peer, raw []byte) {
+	packet := crypto.EncryptBytes(peer.PK, c.SecretKey, raw, c.nonce)
 	if peer.CurrentAddr != nil {
 		c.conn.WriteToUDP(packet, peer.CurrentAddr)
 	} else {
@@ -85,9 +94,9 @@ func (c *Client) SendRawPacket(peer *config.Peer, raw []byte) {
 	}
 }
 
-func (c *Client) searchPeerByPk(pk []byte) *config.Peer {
+func (c *Client) searchPeerByPk(pk []byte) *Peer {
 	for _, peer := range c.PeerList {
-		if bytes.Compare(peer.PK.Bytes, pk) == 0 {
+		if bytes.Compare(peer.PK, pk) == 0 {
 			return &peer
 		}
 	}
