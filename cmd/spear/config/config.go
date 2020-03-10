@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 )
 
@@ -49,47 +48,3 @@ type Peer struct {
 	CurrentAddr *net.UDPAddr
 	IsNotKnown  bool
 }
-<<<<<<< HEAD
-
-/*
-example 'config.json':
-{
-    "pk": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-    "sk": "ABECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-    "ports": [15124, 15125, 15126],
-    "peers": [
-        {
-            "pk": "ACECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-            "host": "192.168.1.4",
-            "ports": [2313, 2314, 2315]
-        },
-        {
-            "pk": "ADECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=",
-            "host": "foo.bar.baz.qux.quux.quuux",
-            "ports": [1234, 2345]
-        }
-    ]
-}
-*/
-
-type Config struct {
-	// the user's keys
-	PK Key `json:"pk"`
-	SK Key `json:"sk"`
-	// A list of ports to bind to
-	Ports []int
-	// the peer list
-	Peers []Peer
-}
-
-func (conf *Config) ReadFile(filePath string) error {
-	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-
-	json.Unmarshal(data, conf)
-	return nil
-}
-=======
->>>>>>> 5388b46e06eab348111520d5e8b3c26321b8b416
