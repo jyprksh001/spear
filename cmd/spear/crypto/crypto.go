@@ -13,6 +13,9 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
+//NonceSize is the size of nonce used by EncryptBytes
+const NonceSize = chacha20poly1305.NonceSize
+
 //EncryptBytes creates an encrypted packet and conumes the plaintext storage
 func EncryptBytes(otherPk, userSk, plaintext, nonce []byte) []byte {
 	if len(nonce) != chacha20poly1305.NonceSize {
