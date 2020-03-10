@@ -35,17 +35,16 @@ func EncryptBytes(otherPk, userSk, plaintext, nonce []byte) []byte {
 
 //DecryptBytes takes an encrypted packet and reutrns (sender pk, packet id, plaintext)
 func DecryptBytes(c, userSk []byte) ([]byte, uint64, []byte, error) {
+	reader := bytes.NewReader(c)
+	pk := make([]byte, 32)
+	nonce := make([]byte, chacha20poly1305.NonceSize)
+	packet := make([]byte, len(c))
+
+	reader.Read(pk)
+	reader.Read(nonce)
+	n, _ := reader.Read(packet)
+	packet = packet[:n]
 	for _, offset := range []int64{0, -1, 1} {
-		reader := bytes.NewReader(c)
-		pk := make([]byte, 32)
-		nonce := make([]byte, chacha20poly1305.NonceSize)
-		packet := make([]byte, len(c))
-
-		reader.Read(pk)
-		reader.Read(nonce)
-		n, _ := reader.Read(packet)
-		packet = packet[:n]
-
 		key := createTimeBaseKey(pk, userSk, offset)
 		aead, err := chacha20poly1305.New(key)
 		if err != nil {
