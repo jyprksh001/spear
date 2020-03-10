@@ -24,7 +24,7 @@ type Client struct {
 
 //Peer refers to another spear user
 type Peer struct {
-	PK   []byte `json:"pk"`
+	PK   []byte
 	Host string
 	// A list of possible ports
 	Ports []int
@@ -73,6 +73,8 @@ func (c *Client) StartListening() {
 			sender.PK = pk
 			sender.CurrentAddr = addr
 			sender.IsNotKnown = true
+		} else {
+			sender.CurrentAddr = addr
 		}
 
 		go (*c.Callback)(sender, id, plaintext)
