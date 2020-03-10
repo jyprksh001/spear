@@ -49,6 +49,7 @@ type Peer struct {
 	CurrentAddr *net.UDPAddr
 	IsNotKnown  bool
 }
+<<<<<<< HEAD
 
 /*
 example 'config.json':
@@ -90,3 +91,5 @@ func (conf *Config) ReadFile(filePath string) error {
 	json.Unmarshal(data, conf)
 	return nil
 }
+=======
+>>>>>>> 5388b46e06eab348111520d5e8b3c26321b8b416
