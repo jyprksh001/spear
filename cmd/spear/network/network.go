@@ -61,12 +61,6 @@ func (addr *Addr) Write(conn *net.UDPConn, data []byte) {
 	}
 }
 
-//Packet refers to a decrypted incoming packet sent by a peer
-type Packet struct {
-	ID   []byte
-	Data []byte
-}
-
 //Peer refers to another spear user
 type Peer struct {
 	PublicKey []byte
@@ -133,8 +127,8 @@ func (client *Client) Start() {
 			sender.receivedPackets = treeset.NewWith(sortByPacketID)
 		}
 		sender.receivedPackets.Add(Packet{
-			ID:   id,
-			Data: plaintext,
+			ID:      id,
+			RawData: plaintext,
 		})
 	}
 }
