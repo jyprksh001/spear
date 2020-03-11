@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"../crypto"
-
-	"github.com/emirpasic/gods/sets/treeset"
 )
 
 const minimumPacketBufferSize = 5
@@ -36,17 +34,6 @@ func (addr *Addr) Bind() (*net.UDPConn, error) {
 	return nil, errors.New("Unable to bind to any candidates")
 }
 
-//Set sets the current UDPAddr used by the Client
-func (addr *Addr) Set(currentNew *net.UDPAddr) error {
-	for _, cand := range addr.Candidates {
-		if cand.IP.Equal(currentNew.IP) && cand.Port == currentNew.Port {
-			addr.current = currentNew
-			return nil
-		}
-	}
-	return errors.New("UDPAddr is not in candidate list")
-}
-
 //Get returns the current address
 func (addr *Addr) Get() *net.UDPAddr {
 	return addr.current
@@ -60,14 +47,6 @@ func (addr *Addr) Write(conn *net.UDPConn, data []byte) {
 	} else {
 		conn.WriteToUDP(data, addr.current)
 	}
-}
-
-//Peer refers to another spear user
-type Peer struct {
-	PublicKey []byte
-	Addr      Addr
-
-	receivedPackets *treeset.Set
 }
 
 //Client refers to the backend of the client containing all basic information needed by the core
@@ -114,22 +93,16 @@ func (client *Client) Start(stop *bool, done chan bool) {
 		}
 
 		sender := client.GetPeerByPublicKey(pk)
-		if err := sender.Addr.Set(addr); err != nil {
-			log.Println(err)
-			continue
-		} else {
-			if sender == nil {
-				sender = &Peer{
-					PublicKey: pk,
-					Addr: Addr{
-						Candidates: []*net.UDPAddr{addr},
-					},
-				}
-				sender.Addr.Set(addr)
+		if sender == nil {
+			sender = &Peer{
+				PublicKey: pk,
+				Addr: Addr{
+					current: addr,
+				},
 			}
 		}
 		if sender.receivedPackets == nil {
-			sender.receivedPackets = treeset.NewWith(sortByPacketID)
+			sender.receivedPackets = []*Packet{}
 		}
 		sender.receivePacket(&Packet{
 			ID:           id,
@@ -162,46 +135,4 @@ func (client *Client) GetPeerByPublicKey(pk []byte) *Peer {
 		}
 	}
 	return nil
-}
-
-//GetNewPacket returns a new packet in the peer buffer
-func (peer *Peer) GetNewPacket() *Packet {
-	if peer.receivedPackets == nil {
-		return nil
-	}
-	if peer.receivedPackets.Size() < minimumPacketBufferSize {
-		return nil
-	}
-	packet := peer.receivedPackets.Values()[0].(Packet)
-	peer.receivedPackets.Remove(packet)
-	return &packet
-}
-
-func sortByPacketID(a, b interface{}) int {
-	c1 := a.(Packet)
-	c2 := b.(Packet)
-
-	return bytes.Compare(c1.ID, c2.ID)
-}
-
-func (peer *Peer) receivePacket(packet *Packet) {
-	peer.receivedPackets.Add(*packet)
-
-	//Check size max limit
-	if peer.receivedPackets.Size() > maximumPacketBufferSize {
-		packet := peer.receivedPackets.Values()[0].(Packet)
-		peer.receivedPackets.Remove(packet)
-	}
-
-	oldPackets := []Packet{}
-
-	for _, value := range peer.receivedPackets.Values() {
-		p := value.(Packet)
-		currentTimeMillis := time.Now().UnixNano() / 1000000
-		if currentTimeMillis-p.ReceivedTime > maximumTimeDifference {
-			oldPackets = append(oldPackets, p)
-		}
-	}
-
-	peer.receivedPackets.Remove(oldPackets)
 }

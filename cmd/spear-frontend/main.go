@@ -53,5 +53,6 @@ func main() {
 func sendTrash(client *network.Client) {
 	for {
 		client.SendBytesToAll([]byte("I love you donald!!!"))
+		time.Sleep(5000000)
 	}
 }
