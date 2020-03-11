@@ -144,6 +144,13 @@ func (client *Client) SendBytes(peer *Peer, bytes []byte) {
 	client.nonce = crypto.BytesIncr(client.nonce)
 }
 
+//SendBytesToAll send a packet to all peers, bytes should be unencrypted.
+func (client *Client) SendBytesToAll(bytes []byte) {
+	for _, peer := range client.PeerList {
+		client.SendBytes(peer, bytes)
+	}
+}
+
 //GetPeerByPublicKey attempts to find a peer with the corresponding public key. Returns nil if nothing is found.
 func (client *Client) GetPeerByPublicKey(pk []byte) *Peer {
 	for _, peer := range client.PeerList {

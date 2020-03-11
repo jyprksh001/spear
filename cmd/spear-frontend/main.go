@@ -15,8 +15,6 @@ import (
 func main() {
 	crypto.Init()
 
-	channel := make(chan int)
-
 	if len(os.Args) > 1 && os.Args[1] == "genkey" {
 		privateKey := crypto.RandomBytes(32)
 		publicKey := crypto.CreatePublicKey(privateKey)
@@ -40,18 +38,21 @@ func main() {
 	stop := false
 	done := make(chan bool, 1)
 	go client.Start(&stop, done)
+	go sendTrash(&client)
 
-	for _, peer := range client.PeerList {
-		for i := 0; i < 10; i++ {
-			client.SendBytes(peer, []byte("I love you donald!!!"))
+	for {
+		for _, peer := range client.PeerList {
+			packet := peer.GetNewPacket()
+			if packet != nil {
+				fmt.Println(packet.RawData)
+			}
 		}
-		time.Sleep(3000000000)
-		fmt.Println(peer.GetNewPacket())
+		time.Sleep(5000000)
 	}
+}
 
-	fmt.Println("Stopping server")
-	stop = true
-
-	<-done
-	fmt.Println("Server stopped")
+func sendTrash(client *network.Client) {
+	for {
+		client.SendBytesToAll([]byte("I love you donald!!!"))
+	}
 }
