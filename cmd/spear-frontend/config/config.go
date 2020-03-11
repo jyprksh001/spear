@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-    "log"
 	"io/ioutil"
+	"log"
 	"net"
 	"strconv"
 	"strings"
-    "../../spear/network"
+
+	"../../spear/network"
 )
 
 //ParseAddr turns a string in ipv4:port format to a UDPAddr
@@ -89,9 +90,9 @@ func (addr *Address) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 	addr.UDP = &net.UDPAddr{
-        IP: a.IP,
-        Port: a.Port,
-    }
+		IP:   a.IP,
+		Port: a.Port,
+	}
 	return nil
 }
 
@@ -102,10 +103,10 @@ type Peer struct {
 }
 
 func (peer *Peer) LoadToPeer(dest *network.Peer) {
-    dest.PublicKey = peer.PublicKey.Bytes
-    for _, cand := range peer.Candidates {
-        dest.Addr.Candidates = append(dest.Addr.Candidates, cand.UDP)
-    }
+	dest.PublicKey = peer.PublicKey.Bytes
+	for _, cand := range peer.Candidates {
+		dest.Addr.Candidates = append(dest.Addr.Candidates, cand.UDP)
+	}
 }
 
 //Config is a struct used for JSON marshalling, mirroring the structure of config.json
@@ -117,8 +118,8 @@ type Config struct {
 
 //ReadFile reads a config.json and init the values of conf
 func (conf *Config) ReadFile(path string) error {
-    log.Println("Reading config file:", path)
-	data, err := ioutil.ReadFile("config.json")
+	log.Println("Reading config file:", path)
+	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -130,13 +131,13 @@ func (conf *Config) ReadFile(path string) error {
 }
 
 func (conf *Config) LoadToClient(client *network.Client) {
-    client.SecretKey = conf.SecretKey.Bytes
-    for _, cand := range conf.Candidates {
-        client.Addr.Candidates = append(client.Addr.Candidates, cand.UDP)
-    }
-    for _, peer := range conf.Peers {
-        p := new(network.Peer)
-        peer.LoadToPeer(p)
-        client.PeerList = append(client.PeerList, p)
-    }
+	client.SecretKey = conf.SecretKey.Bytes
+	for _, cand := range conf.Candidates {
+		client.Addr.Candidates = append(client.Addr.Candidates, cand.UDP)
+	}
+	for _, peer := range conf.Peers {
+		p := new(network.Peer)
+		peer.LoadToPeer(p)
+		client.PeerList = append(client.PeerList, p)
+	}
 }

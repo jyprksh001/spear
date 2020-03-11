@@ -13,8 +13,6 @@ import (
 )
 
 func main() {
-	crypto.Init()
-
 	if len(os.Args) > 1 && os.Args[1] == "genkey" {
 		privateKey := crypto.RandomBytes(32)
 		publicKey := crypto.CreatePublicKey(privateKey)
@@ -24,7 +22,8 @@ func main() {
 	}
 
 	var conf config.Config
-	conf.ReadFile("config.json")
+	conf.ReadFile("/home/roger/spear/config.json")
+	fmt.Println(conf.Peers)
 
 	var client network.Client
 	conf.LoadToClient(&client)

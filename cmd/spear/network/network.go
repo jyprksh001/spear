@@ -84,6 +84,9 @@ type Client struct {
 //Initialize setup the client, should be called first
 func (client *Client) Initialize() error {
 	crypto.Init()
+	if len(client.Addr.Candidates) == 0 {
+		panic("Address candidates is empty")
+	}
 	conn, err := client.Addr.Bind()
 	if err != nil {
 		return err
