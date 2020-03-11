@@ -3,8 +3,9 @@ package network
 import (
 	"bytes"
 	"errors"
+	"log"
 	"net"
-    "log"
+	"time"
 
 	"../crypto"
 
@@ -12,6 +13,8 @@ import (
 )
 
 const minimumPacketBufferSize = 5
+const maximumPacketBufferSize = 10
+const maximumTimeDifference = 1000
 
 // Addr is a container of candidates and the current one
 type Addr struct {
@@ -25,11 +28,10 @@ func (addr *Addr) Bind() (*net.UDPConn, error) {
 		conn, err := net.ListenUDP("udp", cand)
 		if err == nil {
 			addr.current = cand
-            log.Println("Successfully bound to", cand.String())
+			log.Println("Successfully bound to", cand.String())
 			return conn, nil
-		} else {
-            log.Println("Attempted to bind to", cand.String())
-        }
+		}
+		log.Println("Attempted to bind to", cand.String())
 	}
 	return nil, errors.New("Unable to bind to any candidates")
 }
@@ -93,25 +95,25 @@ func (client *Client) Initialize() error {
 }
 
 //Start starts listening to incoming packets
-func (client *Client) Start() {
-	for {
+func (client *Client) Start(stop *bool, done chan bool) {
+	for !*stop {
 		buffer := make([]byte, 0x1000)
 		size, addr, err := client.conn.ReadFromUDP(buffer)
 		if err != nil {
-            log.Panicln(err)
+			log.Println(err)
 			continue
 		}
 
 		pk, id, plaintext, err := crypto.DecryptBytes(buffer[:size], client.SecretKey)
 		if err != nil {
-            log.Panicln(err)
+			log.Println(err)
 			continue
 		}
 
 		sender := client.GetPeerByPublicKey(pk)
 		if err := sender.Addr.Set(addr); err != nil {
-            log.Panicln(err)
-            continue
+			log.Println(err)
+			continue
 		} else {
 			if sender == nil {
 				sender = &Peer{
@@ -126,17 +128,20 @@ func (client *Client) Start() {
 		if sender.receivedPackets == nil {
 			sender.receivedPackets = treeset.NewWith(sortByPacketID)
 		}
-		sender.receivedPackets.Add(Packet{
-			ID:      id,
-			RawData: plaintext,
+		sender.receivePacket(&Packet{
+			ID:           id,
+			RawData:      plaintext,
+			ReceivedTime: time.Now().UTC().UnixNano() / 1000000,
 		})
 	}
+	done <- true
 }
 
 //SendBytes send a packet to another peer, bytes should be unencrypted.
 func (client *Client) SendBytes(peer *Peer, bytes []byte) {
 	ciphertext := crypto.EncryptBytes(peer.PublicKey, client.SecretKey, bytes, client.nonce)
 	peer.Addr.Write(client.conn, ciphertext)
+	client.nonce = crypto.BytesIncr(client.nonce)
 }
 
 //GetPeerByPublicKey attempts to find a peer with the corresponding public key. Returns nil if nothing is found.
@@ -167,4 +172,26 @@ func sortByPacketID(a, b interface{}) int {
 	c2 := b.(Packet)
 
 	return bytes.Compare(c1.ID, c2.ID)
+}
+
+func (peer *Peer) receivePacket(packet *Packet) {
+	peer.receivedPackets.Add(*packet)
+
+	//Check size max limit
+	if peer.receivedPackets.Size() > maximumPacketBufferSize {
+		packet := peer.receivedPackets.Values()[0].(Packet)
+		peer.receivedPackets.Remove(packet)
+	}
+
+	oldPackets := []Packet{}
+
+	for _, value := range peer.receivedPackets.Values() {
+		p := value.(Packet)
+		currentTimeMillis := time.Now().UnixNano() / 1000000
+		if currentTimeMillis-p.ReceivedTime > maximumTimeDifference {
+			oldPackets = append(oldPackets, p)
+		}
+	}
+
+	peer.receivedPackets.Remove(oldPackets)
 }

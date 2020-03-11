@@ -2,8 +2,9 @@ package network
 
 //Packet refers to a decrypted incoming packet sent by a peer
 type Packet struct {
-	ID      []byte
-	RawData []byte
+	ID           []byte
+	RawData      []byte
+	ReceivedTime int64
 }
 
 //PacketAudio contains uncompressed audio data
