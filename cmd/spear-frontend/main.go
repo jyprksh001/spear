@@ -9,6 +9,7 @@ import (
 
 	"../spear/crypto"
 	"../spear/network"
+
 	"./config"
 )
 
@@ -21,12 +22,17 @@ func main() {
 		return
 	}
 
-	var conf config.Config
-	conf.ReadFile("/home/roger/spear/config.json")
-	fmt.Println(conf.Peers)
+	conf, err := config.ParseFile("/home/roger/spear/config.conf")
+	if err != nil {
+		panic(err)
+	}
 
-	var client network.Client
-	conf.LoadToClient(&client)
+	client, err := config.CreateClient(conf)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%d peers found.\n", len(client.PeerList))
 
 	if err := client.Initialize(); err != nil {
 		panic(err)
@@ -37,7 +43,7 @@ func main() {
 	stop := false
 	done := make(chan bool, 1)
 	go client.Start(&stop, done)
-	go sendTrash(&client)
+	go sendTrash(client)
 
 	for {
 		for _, peer := range client.PeerList {
