@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+    "../../spear/network"
 )
 
 //ParseAddr turns a string in ipv4:port format to a UDPAddr
@@ -47,7 +48,6 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 
 //UnmarshalJSON is used for JSON unmarshalling
 func (key *Key) UnmarshalJSON(bytes []byte) error {
-	fmt.Println("What")
 
 	var encoded string
 	if err := json.Unmarshal(bytes, &encoded); err != nil {
@@ -78,7 +78,6 @@ func (addr *Address) MarshalJSON() ([]byte, error) {
 
 //UnmarshalJSON is used for JSON unmarshalling
 func (addr *Address) UnmarshalJSON(bytes []byte) error {
-	fmt.Println("WHAT")
 	var str string
 	if err := json.Unmarshal(bytes, &str); err != nil {
 		return err
@@ -88,7 +87,6 @@ func (addr *Address) UnmarshalJSON(bytes []byte) error {
 	if err != nil {
 		return err
 	}
-
 	addr.UDP.IP = a.IP
 	addr.UDP.Port = a.Port
 	return nil
@@ -98,6 +96,13 @@ func (addr *Address) UnmarshalJSON(bytes []byte) error {
 type Peer struct {
 	PublicKey  Key       `json:"pk"`
 	Candidates []Address `json:"candidates"`
+}
+
+func (peer *Peer) LoadToPeer(dest *network.Peer) {
+    dest.PublicKey = peer.PublicKey.Bytes
+    for _, cand := range peer.Candidates {
+        dest.Addr.Candidates = append(dest.Addr.Candidates, &cand.UDP)
+    }
 }
 
 //Config is a struct used for JSON marshalling, mirroring the structure of config.json
@@ -118,4 +123,16 @@ func (conf *Config) ReadFile(path string) error {
 		return err
 	}
 	return nil
+}
+
+func (conf *Config) LoadToClient(client *network.Client) {
+    client.SecretKey = conf.SecretKey.Bytes
+    for _, cand := range conf.Candidates {
+        client.Addr.Candidates = append(client.Addr.Candidates, &cand.UDP)
+    }
+    for _, peer := range conf.Peers {
+        p := new(network.Peer)
+        peer.LoadToPeer(p)
+        client.PeerList = append(client.PeerList, p)
+    }
 }
