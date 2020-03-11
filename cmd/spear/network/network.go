@@ -3,7 +3,6 @@ package network
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
     "log"
 
@@ -111,7 +110,8 @@ func (client *Client) Start() {
 
 		sender := client.GetPeerByPublicKey(pk)
 		if err := sender.Addr.Set(addr); err != nil {
-			panic(err)
+            log.Panicln(err)
+            continue
 		} else {
 			if sender == nil {
 				sender = &Peer{
