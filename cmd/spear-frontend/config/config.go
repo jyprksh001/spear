@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+    "log"
 	"io/ioutil"
 	"net"
 	"strconv"
@@ -68,7 +69,7 @@ func (key *Key) UnmarshalJSON(bytes []byte) error {
 
 //Address is a proxy struct used for JSON marshalling
 type Address struct {
-	UDP net.UDPAddr
+	UDP *net.UDPAddr
 }
 
 //MarshalJSON is used for JSON marshalling
@@ -87,8 +88,10 @@ func (addr *Address) UnmarshalJSON(bytes []byte) error {
 	if err != nil {
 		return err
 	}
-	addr.UDP.IP = a.IP
-	addr.UDP.Port = a.Port
+	addr.UDP = &net.UDPAddr{
+        IP: a.IP,
+        Port: a.Port,
+    }
 	return nil
 }
 
@@ -101,7 +104,7 @@ type Peer struct {
 func (peer *Peer) LoadToPeer(dest *network.Peer) {
     dest.PublicKey = peer.PublicKey.Bytes
     for _, cand := range peer.Candidates {
-        dest.Addr.Candidates = append(dest.Addr.Candidates, &cand.UDP)
+        dest.Addr.Candidates = append(dest.Addr.Candidates, cand.UDP)
     }
 }
 
@@ -114,6 +117,7 @@ type Config struct {
 
 //ReadFile reads a config.json and init the values of conf
 func (conf *Config) ReadFile(path string) error {
+    log.Println("Reading config file:", path)
 	data, err := ioutil.ReadFile("config.json")
 	if err != nil {
 		return err
@@ -128,7 +132,7 @@ func (conf *Config) ReadFile(path string) error {
 func (conf *Config) LoadToClient(client *network.Client) {
     client.SecretKey = conf.SecretKey.Bytes
     for _, cand := range conf.Candidates {
-        client.Addr.Candidates = append(client.Addr.Candidates, &cand.UDP)
+        client.Addr.Candidates = append(client.Addr.Candidates, cand.UDP)
     }
     for _, peer := range conf.Peers {
         p := new(network.Peer)

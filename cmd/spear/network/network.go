@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+    "log"
 
 	"../crypto"
 
@@ -25,8 +26,11 @@ func (addr *Addr) Bind() (*net.UDPConn, error) {
 		conn, err := net.ListenUDP("udp", cand)
 		if err == nil {
 			addr.current = cand
+            log.Println("Successfully bound to", cand.String())
 			return conn, nil
-		}
+		} else {
+            log.Println("Attempted to bind to", cand.String())
+        }
 	}
 	return nil, errors.New("Unable to bind to any candidates")
 }
@@ -101,13 +105,13 @@ func (client *Client) Start() {
 		buffer := make([]byte, 0x1000)
 		size, addr, err := client.conn.ReadFromUDP(buffer)
 		if err != nil {
-			fmt.Println(err)
+            log.Panicln(err)
 			continue
 		}
 
 		pk, id, plaintext, err := crypto.DecryptBytes(buffer[:size], client.SecretKey)
 		if err != nil {
-			fmt.Println(err)
+            log.Panicln(err)
 			continue
 		}
 
