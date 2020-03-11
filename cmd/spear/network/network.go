@@ -7,7 +7,11 @@ import (
 	"net"
 
 	"../crypto"
+
+	"github.com/emirpasic/gods/sets/treeset"
 )
+
+const minimumPacketBufferSize = 5
 
 // Addr is a container of candidates and the current one
 type Addr struct {
@@ -55,7 +59,7 @@ func (addr *Addr) Write(conn *net.UDPConn, data []byte) {
 
 //Packet refers to a decrypted incoming packet sent by a peer
 type Packet struct {
-	ID   uint64
+	ID   []byte
 	Data []byte
 }
 
@@ -63,6 +67,8 @@ type Packet struct {
 type Peer struct {
 	PublicKey []byte
 	Addr      Addr
+
+	receivedPackets *treeset.Set
 }
 
 //Client refers to the backend of the client containing all basic information needed by the core
@@ -74,8 +80,6 @@ type Client struct {
 
 	Addr Addr
 	conn *net.UDPConn
-
-	Callback *func(*Peer, *Packet)
 }
 
 //Initialize setup the client, should be called first
@@ -121,8 +125,10 @@ func (client *Client) Start() {
 				sender.Addr.Set(addr)
 			}
 		}
-
-		go (*client.Callback)(sender, &Packet{
+		if sender.receivedPackets == nil {
+			sender.receivedPackets = treeset.NewWith(sortByPacketID)
+		}
+		sender.receivedPackets.Add(Packet{
 			ID:   id,
 			Data: plaintext,
 		})
@@ -143,4 +149,24 @@ func (client *Client) GetPeerByPublicKey(pk []byte) *Peer {
 		}
 	}
 	return nil
+}
+
+//GetNewPacket returns a new packet in the peer buffer
+func (peer *Peer) GetNewPacket() *Packet {
+	if peer.receivedPackets == nil {
+		return nil
+	}
+	if peer.receivedPackets.Size() < minimumPacketBufferSize {
+		return nil
+	}
+	packet := peer.receivedPackets.Values()[0].(Packet)
+	peer.receivedPackets.Remove(packet)
+	return &packet
+}
+
+func sortByPacketID(a, b interface{}) int {
+	c1 := a.(Packet)
+	c2 := b.(Packet)
+
+	return bytes.Compare(c1.ID, c2.ID)
 }

@@ -34,7 +34,7 @@ func EncryptBytes(otherPk, userSk, plaintext, nonce []byte) []byte {
 }
 
 //DecryptBytes takes an encrypted packet and reutrns (sender pk, packet id, plaintext)
-func DecryptBytes(c, userSk []byte) ([]byte, uint64, []byte, error) {
+func DecryptBytes(c, userSk []byte) ([]byte, []byte, []byte, error) {
 	reader := bytes.NewReader(c)
 	pk := make([]byte, 32)
 	nonce := make([]byte, chacha20poly1305.NonceSize)
@@ -53,11 +53,10 @@ func DecryptBytes(c, userSk []byte) ([]byte, uint64, []byte, error) {
 
 		plaintext, err := aead.Open([]byte{}, nonce, packet, pk)
 		if err == nil {
-			id := binary.BigEndian.Uint64(nonce[chacha20poly1305.NonceSize-8:])
-			return pk, id, plaintext, nil
+			return pk, nonce, plaintext, nil
 		}
 	}
-	return nil, 0, nil, errors.New("Unable to decrypt")
+	return nil, nil, nil, errors.New("Unable to decrypt")
 }
 
 func createTimeBaseKey(otherPk, userSk []byte, offset int64) []byte {
