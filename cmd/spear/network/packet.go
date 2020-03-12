@@ -7,13 +7,13 @@ type Packet struct {
 	ReceivedTime int64
 }
 
-//PacketAudio contains uncompressed audio data
-type PacketAudio struct {
+//AudioData contains uncompressed audio data
+type AudioData struct {
 	AudioData []byte
 }
 
-//PacketVideo contains video data
-type PacketVideo struct {
+//VideoData contains video data
+type VideoData struct {
 	Metadata  byte
 	VideoData []byte
 }
@@ -23,41 +23,41 @@ func (p *Packet) IsAudioPacket() bool {
 	return p.RawData[0] == 0
 }
 
-//ToPacketAudio turns Packet into PacketAudio
-func (p *Packet) ToPacketAudio() *PacketAudio {
+//ToAudioData turns Packet into AudioData
+func (p *Packet) ToAudioData() *AudioData {
 	if !p.IsAudioPacket() {
 		panic("Packet isn't audio packet")
 	}
 
 	data := p.RawData[1:]
 	//TODO: Handle opus decompression!
-	return &PacketAudio{
+	return &AudioData{
 		AudioData: data,
 	}
 }
 
-//ToPacketVideo turns Packet into PacketAudio
-func (p *Packet) ToPacketVideo() *PacketVideo {
+//ToVideoData turns Packet into VideoData
+func (p *Packet) ToVideoData() *VideoData {
 	if !p.IsAudioPacket() {
 		panic("Packet isn't audio packet")
 	}
 
 	data := p.RawData[1:]
 	//TODO: Handle H.264 decompression!
-	return &PacketVideo{
+	return &VideoData{
 		Metadata:  p.RawData[0],
 		VideoData: data,
 	}
 }
 
 //ToBytes turns p into raw bytes
-func (p *PacketAudio) ToBytes() []byte {
+func (p *AudioData) ToBytes() []byte {
 	//TODO: Opus compression!
 	return p.AudioData
 }
 
 //ToBytes turns p into raw bytes
-func (p *PacketVideo) ToBytes() []byte {
+func (p *VideoData) ToBytes() []byte {
 	//TODO: H.264 compression!
 	return p.VideoData
 }
