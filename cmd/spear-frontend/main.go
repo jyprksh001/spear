@@ -58,7 +58,7 @@ func main() {
 
 func sendTrash(client *network.Client) {
 	for {
-		client.SendBytesToAll([]byte("I love you donald!!!"))
+		client.SendBytesToAll([]byte("Password123456"))
 		time.Sleep(5000000)
 	}
 }

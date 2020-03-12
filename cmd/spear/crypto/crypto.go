@@ -17,6 +17,13 @@ const NonceSize = chacha20poly1305.NonceSize
 //EncryptBytes creates an encrypted packet and conumes the plaintext storage
 func EncryptBytes(otherPk, userSk, plaintext []byte, packetID uint32) []byte {
 	id := uint32ToByte(packetID)
+
+	//Length info
+	length := uint32(len(plaintext) & 0xFFFF)
+	metadata := make([]byte, 2)
+	binary.LittleEndian.PutUint32(metadata, length)
+	plaintext = append(metadata, plaintext...)
+
 	ciphertext, mkey := encrypt(otherPk, userSk, plaintext, id, 0)
 
 	ciphertext = append(id, ciphertext...)
@@ -39,6 +46,8 @@ func DecryptBytes(c, otherPk, userSk []byte) (uint32, []byte, error) {
 
 	for _, offset := range []int64{0, -1, 1} {
 		plaintext, mkey := encrypt(otherPk, userSk, packet, id, offset)
+		length := binary.LittleEndian.Uint32(plaintext[:2])
+		plaintext = plaintext[2 : length+2]
 
 		//Verify MAC
 		if bytes.Compare(mac, mac512(mkey, append(id, plaintext...))[:2]) == 0 {
@@ -72,7 +81,7 @@ func createTimeBaseKey(otherPk, userSk []byte, offset int64) ([]byte, []byte) {
 	value := make([]byte, 8)
 	binary.LittleEndian.PutUint64(value, uint64(time.Now().UTC().Unix()/30+offset))
 	key := mac512(seed, value)
-	return key[0:256], key[256:512]
+	return key[0:32], key[32:64]
 }
 
 func createKeySeed(otherPk, userSk []byte) []byte {
