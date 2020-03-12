@@ -18,39 +18,40 @@ const NonceSize = chacha20poly1305.NonceSize
 func EncryptBytes(otherPk, userSk, plaintext []byte, packetID uint32) []byte {
 	id := uint32ToByte(packetID)
 
-	//Length info
-	length := uint16(len(plaintext) & 0xFFFF)
-	metadata := make([]byte, 2)
-	binary.LittleEndian.PutUint16(metadata, length)
-	plaintext = append(metadata, plaintext...)
-
 	ciphertext, mkey := encrypt(otherPk, userSk, plaintext, id, 0)
 
 	ciphertext = append(id, ciphertext...)
 
 	//Create MAC
 	mac := mac512(mkey, ciphertext)[:2]
-	return append(mac, ciphertext...)
+	ciphertext = append(mac, ciphertext...)
+
+	//Length info
+	length := uint16(len(ciphertext) & 0xFFFF)
+	metadata := make([]byte, 2)
+	binary.LittleEndian.PutUint16(metadata, length)
+
+	return append(metadata, ciphertext...)
 }
 
 //DecryptBytes takes an encrypted packet and reutrns (packet id, plaintext)
 func DecryptBytes(c, otherPk, userSk []byte) (uint32, []byte, error) {
+	packetSize := binary.LittleEndian.Uint16(c[:2])
+	c = c[2 : 2+packetSize]
+
 	reader := bytes.NewReader(c)
 	mac := make([]byte, 2)
-	id := make([]byte, 4)
-	packet := make([]byte, len(c))
-
 	reader.Read(mac)
+	id := make([]byte, 4)
 	reader.Read(id)
+	packet := make([]byte, reader.Len())
 	reader.Read(packet)
 
 	for _, offset := range []int64{0, -1, 1} {
 		plaintext, mkey := encrypt(otherPk, userSk, packet, id, offset)
-		length := binary.LittleEndian.Uint16(plaintext[:2])
-		plaintext = plaintext[2 : length+2]
 
 		//Verify MAC
-		if bytes.Compare(mac, mac512(mkey, append(id, plaintext...))[:2]) == 0 {
+		if bytes.Compare(mac, mac512(mkey, append(id, packet...))[:2]) == 0 {
 			return binary.LittleEndian.Uint32(id), plaintext, nil
 		}
 	}
