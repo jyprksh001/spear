@@ -26,7 +26,7 @@ func CompressAudio(raw []float32) []byte {
 	return data[:n]
 }
 
-//DecompressAudio uses opus codec to decompress opus data to raw STEREO audio data
+//DecompressAudio uses opus codec to decompress opus data to raw MONO audio data
 func DecompressAudio(data []byte) ([]float32, error) {
 	var frameSizeMs float32 = 60
 	frameSize := channels * frameSizeMs * SampleRate / 1000
@@ -36,15 +36,7 @@ func DecompressAudio(data []byte) ([]float32, error) {
 		return nil, err
 	}
 
-	pcm = pcm[:n]
-	out := make([]float32, n*2)
-
-	//Transfer mono to stereo
-	for i, v := range pcm {
-		out[2*i] = v
-		out[2*i+1] = v
-	}
-	return out, nil
+	return pcm[:n], nil
 }
 
 func getEncoder() *opus.Encoder {

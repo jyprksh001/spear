@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"../audio"
 	"../crypto"
 )
 
@@ -85,9 +86,6 @@ func (client *Client) Start(stop *bool, done chan bool) {
 		for _, peer := range client.GetPeerByAddr(addr) {
 			id, plaintext, err := crypto.DecryptBytes(buffer[:size], peer.PublicKey, client.SecretKey)
 			if err == nil {
-				if peer.receivedPackets == nil {
-					peer.receivedPackets = []*Packet{}
-				}
 				peer.receivePacket(&Packet{
 					ID:           id,
 					RawData:      plaintext,
@@ -101,18 +99,21 @@ func (client *Client) Start(stop *bool, done chan bool) {
 	done <- true
 }
 
-//SendBytes send a packet to another peer, bytes should be unencrypted.
-func (client *Client) SendBytes(peer *Peer, bytes []byte) {
+//SendAudioData takes raw MONO audio data and send it to another peer
+func (client *Client) SendAudioData(peer *Peer, pcm []float32) {
+	if len(pcm) != audio.FrameSize {
+		panic("pcm size not equal to audio.FrameSize")
+	}
+	data := audio.CompressAudio(pcm)
+
+	client.sendBytes(peer, append([]byte{0}, data...))
+}
+
+//sendBytes send a packet to another peer, bytes should be unencrypted.
+func (client *Client) sendBytes(peer *Peer, bytes []byte) {
 	ciphertext := crypto.EncryptBytes(peer.PublicKey, client.SecretKey, bytes, peer.packetID)
 	peer.Addr.Write(client.conn, ciphertext)
 	peer.packetID++
-}
-
-//SendBytesToAll send a packet to all peers, bytes should be unencrypted.
-func (client *Client) SendBytesToAll(bytes []byte) {
-	for _, peer := range client.PeerList {
-		client.SendBytes(peer, bytes)
-	}
 }
 
 //GetPeerByAddr find a peers with the corresponding address

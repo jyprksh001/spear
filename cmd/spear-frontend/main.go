@@ -2,26 +2,18 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"time"
 
 	"encoding/base64"
 
+	"../spear/audio"
 	"../spear/crypto"
 	"../spear/network"
+	"github.com/gordonklaus/portaudio"
 
 	"./config"
 )
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "genkey" {
-		privateKey := crypto.RandomBytes(32)
-		publicKey := crypto.CreatePublicKey(privateKey)
-		fmt.Printf("Public Key: %s\n", base64.StdEncoding.EncodeToString(publicKey))
-		fmt.Printf("Secret Key: %s\n", base64.StdEncoding.EncodeToString(privateKey))
-		return
-	}
-
 	conf, err := config.ParseFile("/home/roger/spear/config.conf")
 	if err != nil {
 		panic(err)
@@ -32,6 +24,7 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Println("Current public key: " + base64.StdEncoding.EncodeToString(crypto.CreatePublicKey(client.SecretKey)))
 	fmt.Printf("%d peers found.\n", len(client.PeerList))
 
 	if err := client.Initialize(); err != nil {
@@ -43,22 +36,37 @@ func main() {
 	stop := false
 	done := make(chan bool, 1)
 	go client.Start(&stop, done)
-	go sendTrash(client)
-
-	for {
-		for _, peer := range client.PeerList {
-			packet := peer.GetNewPacket()
-			if packet != nil {
-				fmt.Println(packet.RawData)
-			}
-		}
-		time.Sleep(5000000)
-	}
+	go startAudioCallback(client)
+	<-done
 }
 
-func sendTrash(client *network.Client) {
+func startAudioCallback(client *network.Client) {
+	if err := portaudio.Initialize(); err != nil {
+		panic(err)
+	}
+
+	in := make([]float32, audio.FrameSize)
+	out := make([]float32, audio.FrameSize)
+
+	stream, err := portaudio.OpenDefaultStream(1, 1, audio.SampleRate, audio.FrameSize, in, out)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := stream.Start(); err != nil {
+		panic(err)
+	}
+
 	for {
-		client.SendBytesToAll([]byte("Password123456"))
-		time.Sleep(5000000)
+		if err := stream.Read(); err != nil {
+			panic(err)
+		}
+		for _, peer := range client.PeerList {
+			client.SendAudioData(peer, in)
+			if packet := peer.GetAudioData(); packet != nil {
+				copy(out, packet.AudioData)
+				stream.Write()
+			}
+		}
 	}
 }
