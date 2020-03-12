@@ -1,8 +1,7 @@
 package network
 
 import (
-	"bytes"
-	"fmt"
+	"math"
 	"time"
 )
 
@@ -12,6 +11,7 @@ type Peer struct {
 	Addr      Addr
 
 	receivedPackets []*Packet
+	packetID        uint32
 }
 
 //GetNewPacket returns a new packet in the peer buffer
@@ -28,12 +28,9 @@ func (peer *Peer) GetNewPacket() *Packet {
 
 func (peer *Peer) popReceivedPackets() *Packet {
 	index := -1
-	var smallestID []byte = nil
+	var smallestID uint32 = math.MaxUint32
 	for i, p := range peer.receivedPackets {
-		if smallestID == nil {
-			index = i
-			smallestID = p.ID
-		} else if bytes.Compare(p.ID, smallestID) < 0 {
+		if p.ID < smallestID {
 			index = i
 			smallestID = p.ID
 		}
@@ -47,15 +44,6 @@ func (peer *Peer) popReceivedPackets() *Packet {
 	peer.receivedPackets[index] = peer.receivedPackets[len(peer.receivedPackets)-1]
 	peer.receivedPackets = peer.receivedPackets[:len(peer.receivedPackets)-1]
 	return packet
-}
-
-func sortByPacketID(a, b interface{}) int {
-	if _, ok := a.(Packet); ok {
-		fmt.Printf("WOWOOW:%T %T\n", a, b)
-	}
-	c1 := a.(Packet)
-	c2 := b.(Packet)
-	return bytes.Compare(c1.ID, c2.ID)
 }
 
 func (peer *Peer) receivePacket(packet *Packet) {

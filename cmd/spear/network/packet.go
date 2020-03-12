@@ -2,7 +2,7 @@ package network
 
 //Packet refers to a decrypted incoming packet sent by a peer
 type Packet struct {
-	ID           []byte
+	ID           uint32
 	RawData      []byte
 	ReceivedTime int64
 }

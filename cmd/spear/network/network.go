@@ -1,7 +1,6 @@
 package network
 
 import (
-	"bytes"
 	"errors"
 	"log"
 	"net"
@@ -52,7 +51,6 @@ func (addr *Addr) Write(conn *net.UDPConn, data []byte) {
 //Client refers to the backend of the client containing all basic information needed by the core
 type Client struct {
 	SecretKey []byte
-	nonce     []byte
 
 	PeerList []*Peer
 
@@ -62,7 +60,6 @@ type Client struct {
 
 //Initialize setup the client, should be called first
 func (client *Client) Initialize() error {
-	crypto.Init()
 	if len(client.Addr.Candidates) == 0 {
 		panic("Address candidates is empty")
 	}
@@ -72,7 +69,6 @@ func (client *Client) Initialize() error {
 	}
 	conn.SetReadBuffer(0x100000)
 	client.conn = conn
-	client.nonce = crypto.RandomBytes(crypto.NonceSize)
 	return nil
 }
 
@@ -86,38 +82,30 @@ func (client *Client) Start(stop *bool, done chan bool) {
 			continue
 		}
 
-		pk, id, plaintext, err := crypto.DecryptBytes(buffer[:size], client.SecretKey)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		sender := client.GetPeerByPublicKey(pk)
-		if sender == nil {
-			sender = &Peer{
-				PublicKey: pk,
-				Addr: Addr{
-					current: addr,
-				},
+		for _, peer := range client.GetPeerByAddr(addr) {
+			id, plaintext, err := crypto.DecryptBytes(buffer[:size], peer.PublicKey, client.SecretKey)
+			if err == nil {
+				if peer.receivedPackets == nil {
+					peer.receivedPackets = []*Packet{}
+				}
+				peer.receivePacket(&Packet{
+					ID:           id,
+					RawData:      plaintext,
+					ReceivedTime: time.Now().UTC().UnixNano() / 1000000,
+				})
+				break
 			}
 		}
-		if sender.receivedPackets == nil {
-			sender.receivedPackets = []*Packet{}
-		}
-		sender.receivePacket(&Packet{
-			ID:           id,
-			RawData:      plaintext,
-			ReceivedTime: time.Now().UTC().UnixNano() / 1000000,
-		})
+
 	}
 	done <- true
 }
 
 //SendBytes send a packet to another peer, bytes should be unencrypted.
 func (client *Client) SendBytes(peer *Peer, bytes []byte) {
-	ciphertext := crypto.EncryptBytes(peer.PublicKey, client.SecretKey, bytes, client.nonce)
+	ciphertext := crypto.EncryptBytes(peer.PublicKey, client.SecretKey, bytes, peer.packetID)
 	peer.Addr.Write(client.conn, ciphertext)
-	client.nonce = crypto.BytesIncr(client.nonce)
+	peer.packetID++
 }
 
 //SendBytesToAll send a packet to all peers, bytes should be unencrypted.
@@ -127,12 +115,15 @@ func (client *Client) SendBytesToAll(bytes []byte) {
 	}
 }
 
-//GetPeerByPublicKey attempts to find a peer with the corresponding public key. Returns nil if nothing is found.
-func (client *Client) GetPeerByPublicKey(pk []byte) *Peer {
+//GetPeerByAddr find a peers with the corresponding address
+func (client *Client) GetPeerByAddr(addr *net.UDPAddr) []*Peer {
+	peers := []*Peer{}
 	for _, peer := range client.PeerList {
-		if bytes.Compare(pk, peer.PublicKey) == 0 {
-			return peer
+		for _, paddr := range peer.Addr.Candidates {
+			if paddr.IP.Equal(addr.IP) && paddr.Port == addr.Port {
+				peers = append(peers, peer)
+			}
 		}
 	}
-	return nil
+	return peers
 }
