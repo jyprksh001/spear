@@ -19,9 +19,9 @@ func EncryptBytes(otherPk, userSk, plaintext []byte, packetID uint32) []byte {
 	id := uint32ToByte(packetID)
 
 	//Length info
-	length := uint32(len(plaintext) & 0xFFFF)
+	length := uint16(len(plaintext) & 0xFFFF)
 	metadata := make([]byte, 2)
-	binary.LittleEndian.PutUint32(metadata, length)
+	binary.LittleEndian.PutUint16(metadata, length)
 	plaintext = append(metadata, plaintext...)
 
 	ciphertext, mkey := encrypt(otherPk, userSk, plaintext, id, 0)
@@ -46,7 +46,7 @@ func DecryptBytes(c, otherPk, userSk []byte) (uint32, []byte, error) {
 
 	for _, offset := range []int64{0, -1, 1} {
 		plaintext, mkey := encrypt(otherPk, userSk, packet, id, offset)
-		length := binary.LittleEndian.Uint32(plaintext[:2])
+		length := binary.LittleEndian.Uint16(plaintext[:2])
 		plaintext = plaintext[2 : length+2]
 
 		//Verify MAC
