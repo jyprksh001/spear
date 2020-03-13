@@ -29,7 +29,7 @@ func ParseFile(path string) (*Configuration, error) {
 	}
 	defer file.Close()
 
-	p := praser{}
+	p := parser{}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if err := p.readLine(scanner.Text()); err != nil {
@@ -45,13 +45,13 @@ func ParseFile(path string) (*Configuration, error) {
 	return p.config, nil
 }
 
-type praser struct {
+type parser struct {
 	currentSection string
 	buffer         map[string]string
 	config         *Configuration
 }
 
-func (p *praser) readLine(line string) error {
+func (p *parser) readLine(line string) error {
 	line = strings.TrimSpace(line)
 	if len(line) == 0 || line[0] == '#' {
 		return nil
@@ -86,7 +86,7 @@ func (p *praser) readLine(line string) error {
 	return nil
 }
 
-func (p *praser) export(newSection string) {
+func (p *parser) export(newSection string) {
 	oldSection := p.currentSection
 	p.currentSection = newSection
 	if p.config != nil {
