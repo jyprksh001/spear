@@ -12,7 +12,7 @@ import (
 
 const minimumPacketBufferSize = 5
 const maximumPacketBufferSize = 10
-const maximumTimeDifference = 1000
+const maximumTimeDifference = 500
 
 // Addr is a container of candidates and the current one
 type Addr struct {

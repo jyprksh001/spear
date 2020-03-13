@@ -1,7 +1,7 @@
 package main
 
 import (
-    "log"
+	"log"
 
 	"encoding/base64"
 
@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	conf, err := config.ParseFile("./config.conf")
+	conf, err := config.ParseFile("/home/roger/spear/config.conf")
 	if err != nil {
 		panic(err)
 	}
@@ -59,14 +59,21 @@ func startAudioCallback(client *network.Client) {
 
 	for {
 		if err := stream.Read(); err != nil {
-			panic(err)
+			log.Println("Error while reading stream: " + err.Error())
 		}
 		for _, peer := range client.PeerList {
 			client.SendAudioData(peer, in)
-			if packet := peer.GetAudioData(); packet != nil {
-				copy(out, packet.AudioData)
-				stream.Write()
+			for i := 0; i < len(out); i++ {
+				out[i] = 0
 			}
+
+			if packet := peer.GetAudioData(); packet != nil {
+				client.SendAudioData(peer, in)
+				for i := 0; i < len(out); i++ {
+					out[i] += packet.AudioData[i]
+				}
+			}
+			stream.Write()
 		}
 	}
 }
