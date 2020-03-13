@@ -53,8 +53,12 @@ type praser struct {
 
 func (p *praser) readLine(line string) error {
 	line = strings.TrimSpace(line)
-	if len(line) == 0 {
+	if len(line) == 0 || line[0] == '#' {
 		return nil
+	}
+
+	if index := strings.Index(line, "#"); index >= 0 {
+		line = line[:index]
 	}
 
 	if line[0] == '[' && line[len(line)-1] == ']' {
