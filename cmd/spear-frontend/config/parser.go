@@ -67,12 +67,12 @@ func (p *parser) readLine(line string) error {
 	}
 
 	if p.config == nil {
-		return errors.New("Line: " + line + " is not under any section.")
+		return errors.New("Line: " + line + " is not under any section")
 	}
 
 	pair := strings.SplitN(line, "=", 2)
 	if len(pair) != 2 {
-		return errors.New("Line: " + line + " is not a valid key=value pair.")
+		return errors.New("Line: " + line + " is not a valid key=value pair")
 	}
 
 	key := strings.ToLower(strings.TrimSpace(pair[0]))
