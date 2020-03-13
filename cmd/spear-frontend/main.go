@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+    "log"
 
 	"encoding/base64"
 
@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	conf, err := config.ParseFile("/home/roger/spear/config.conf")
+	conf, err := config.ParseFile("./config.conf")
 	if err != nil {
 		panic(err)
 	}
@@ -24,14 +24,14 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Current public key: " + base64.StdEncoding.EncodeToString(crypto.CreatePublicKey(client.SecretKey)))
-	fmt.Printf("%d peers found.\n", len(client.PeerList))
+	log.Println("Current public key: " + base64.StdEncoding.EncodeToString(crypto.CreatePublicKey(client.SecretKey)))
+	log.Printf("%d peers found\n", len(client.PeerList))
 
 	if err := client.Initialize(); err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Starting client.")
+	log.Println("Starting client")
 
 	stop := false
 	done := make(chan bool, 1)
