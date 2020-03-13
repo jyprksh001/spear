@@ -42,7 +42,7 @@ func CreateClient(config *Configuration) (*network.Client, error) {
 func readClientSection(section *Section, client *network.Client) error {
 	for key, value := range section.Content {
 		switch key {
-		case "secret":
+		case "sk":
 			data, err := base64.StdEncoding.DecodeString(value)
 			if err != nil {
 				return errors.New("Error decoding secret: " + err.Error())
