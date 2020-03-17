@@ -6,13 +6,8 @@ import (
 	"net"
 	"time"
 
-	"../audio"
 	"../crypto"
 )
-
-const minimumPacketBufferSize = 5
-const maximumPacketBufferSize = 10
-const maximumTimeDifference = 500
 
 // Addr is a container of candidates and the current one
 type Addr struct {
@@ -70,6 +65,9 @@ func (client *Client) Initialize() error {
 	}
 	conn.SetReadBuffer(0x100000)
 	client.conn = conn
+	for _, p := range client.PeerList {
+		p.init(client)
+	}
 	return nil
 }
 
@@ -86,34 +84,23 @@ func (client *Client) Start(stop *bool, done chan bool) {
 		for _, peer := range client.GetPeerByAddr(addr) {
 			id, plaintext, err := crypto.DecryptBytes(buffer[:size], peer.PublicKey, client.SecretKey)
 			if err == nil {
-				peer.receivePacket(&Packet{
+				packet := &Packet{
 					ID:           id,
 					RawData:      plaintext,
 					ReceivedTime: time.Now().UTC().UnixNano() / 1000000,
-				})
+				}
+				switch plaintext[0] {
+				case AudioID:
+					peer.receiveAudioPacket(packet)
+				default:
+					log.Printf("Unsupported data %d\n", plaintext[0])
+				}
 				break
 			}
 		}
 
 	}
 	done <- true
-}
-
-//SendAudioData takes raw MONO audio data and send it to another peer
-func (client *Client) SendAudioData(peer *Peer, pcm []float32) {
-	if len(pcm) != audio.FrameSize {
-		panic("pcm size not equal to audio.FrameSize")
-	}
-	data := audio.CompressAudio(pcm)
-
-	client.sendBytes(peer, append([]byte{0}, data...))
-}
-
-//sendBytes send a packet to another peer, bytes should be unencrypted.
-func (client *Client) sendBytes(peer *Peer, bytes []byte) {
-	ciphertext := crypto.EncryptBytes(peer.PublicKey, client.SecretKey, bytes, peer.packetID)
-	peer.Addr.Write(client.conn, ciphertext)
-	peer.packetID++
 }
 
 //GetPeerByAddr find a peers with the corresponding address

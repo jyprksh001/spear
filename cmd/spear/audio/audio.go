@@ -1,6 +1,8 @@
 package audio
 
 import (
+	"time"
+
 	"gopkg.in/hraban/opus.v2"
 )
 
@@ -10,16 +12,16 @@ const (
 	//SampleRate is the preset sample rate for each audio data
 	SampleRate = 48000
 
+	//FrameDuration is the duration of audio data in each frame
+	FrameDuration = time.Second * FrameSize / SampleRate
+
 	channels = 1
 )
 
-var encoder *opus.Encoder = nil
-var decoder *opus.Decoder = nil
-
 //CompressAudio uses opus codec to compress raw MONO audio data
-func CompressAudio(raw []float32) []byte {
+func CompressAudio(encoder *opus.Encoder, raw []float32) []byte {
 	data := make([]byte, 1024)
-	n, err := getEncoder().EncodeFloat32(raw, data)
+	n, err := encoder.EncodeFloat32(raw, data)
 	if err != nil {
 		panic(err)
 	}
@@ -27,11 +29,11 @@ func CompressAudio(raw []float32) []byte {
 }
 
 //DecompressAudio uses opus codec to decompress opus data to raw MONO audio data
-func DecompressAudio(data []byte) ([]float32, error) {
+func DecompressAudio(decoder *opus.Decoder, data []byte) ([]float32, error) {
 	var frameSizeMs float32 = 60
 	frameSize := channels * frameSizeMs * SampleRate / 1000
 	pcm := make([]float32, int(frameSize))
-	n, err := getDecoder().DecodeFloat32(data, pcm)
+	n, err := decoder.DecodeFloat32(data, pcm)
 	if err != nil {
 		return nil, err
 	}
@@ -39,28 +41,20 @@ func DecompressAudio(data []byte) ([]float32, error) {
 	return pcm[:n], nil
 }
 
-func getEncoder() *opus.Encoder {
-	if encoder != nil {
-		return encoder
-	}
-
+//NewEncoder creates a new Opus encoder
+func NewEncoder() *opus.Encoder {
 	enc, err := opus.NewEncoder(SampleRate, channels, opus.AppVoIP)
 	if err != nil {
 		panic(err)
 	}
-	encoder = enc
-	return encoder
+	return enc
 }
 
-func getDecoder() *opus.Decoder {
-	if decoder != nil {
-		return decoder
-	}
-
+//NewDecoder creates a new Opus decoder
+func NewDecoder() *opus.Decoder {
 	dec, err := opus.NewDecoder(SampleRate, channels)
 	if err != nil {
 		panic(err)
 	}
-	decoder = dec
-	return decoder
+	return dec
 }

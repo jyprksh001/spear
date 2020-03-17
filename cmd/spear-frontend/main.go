@@ -48,6 +48,8 @@ func startAudioCallback(client *network.Client) {
 	in := make([]float32, audio.FrameSize)
 	out := make([]float32, audio.FrameSize)
 
+	encoder := audio.NewEncoder()
+
 	stream, err := portaudio.OpenDefaultStream(1, 1, audio.SampleRate, audio.FrameSize, in, out)
 	if err != nil {
 		panic(err)
@@ -61,19 +63,20 @@ func startAudioCallback(client *network.Client) {
 		if err := stream.Read(); err != nil {
 			log.Println("Error while reading stream: " + err.Error())
 		}
-		for _, peer := range client.PeerList {
-			client.SendAudioData(peer, in)
-			for i := 0; i < len(out); i++ {
-				out[i] = 0
-			}
 
+		for i := 0; i < len(out); i++ {
+			out[i] = 0
+		}
+
+		data := audio.CompressAudio(encoder, in)
+		for _, peer := range client.PeerList {
+			peer.SendOpusData(data)
 			if packet := peer.GetAudioData(); packet != nil {
-				client.SendAudioData(peer, in)
-				for i := 0; i < len(out); i++ {
-					out[i] += packet.AudioData[i]
+				for i := 0; i < len(packet); i++ {
+					out[i] += packet[i]
 				}
 			}
-			stream.Write()
 		}
+		stream.Write()
 	}
 }
