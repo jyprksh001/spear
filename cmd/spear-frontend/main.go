@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"math"
+	"time"
 
 	"encoding/base64"
 
@@ -33,11 +35,8 @@ func main() {
 
 	log.Println("Starting client")
 
-	stop := false
-	done := make(chan bool, 1)
-	go client.Start(&stop, done)
 	go startAudioCallback(client)
-	<-done
+	time.Sleep(time.Second * math.MaxUint32)
 }
 
 func startAudioCallback(client *network.Client) {

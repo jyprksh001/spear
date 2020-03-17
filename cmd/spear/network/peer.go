@@ -8,7 +8,7 @@ import (
 //Peer refers to another spear user
 type Peer struct {
 	PublicKey []byte
-	Addr      Addr
+	Addr      DeterminableAddr
 
 	receiveAudioPacket func(*Packet)
 	GetAudioData       func() []float32
@@ -34,7 +34,7 @@ func (peer *Peer) init(client *Client) {
 	}
 	peer.SendOpusData = func(data []byte) {
 		ciphertext := crypto.EncryptBytes(peer.PublicKey, client.SecretKey, append([]byte{0}, data...), audioPacketID)
-		peer.Addr.Write(client.conn, ciphertext)
+		client.writeTo(peer, ciphertext)
 		audioPacketID++
 	}
 }

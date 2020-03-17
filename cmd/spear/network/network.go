@@ -9,39 +9,10 @@ import (
 	"../crypto"
 )
 
-// Addr is a container of candidates and the current one
-type Addr struct {
+//DeterminableAddr is a container of candidates and the current one
+type DeterminableAddr struct {
 	current    *net.UDPAddr
 	Candidates []*net.UDPAddr
-}
-
-//Bind tries to bind the client to one of the address
-func (addr *Addr) Bind() (*net.UDPConn, error) {
-	for _, cand := range addr.Candidates {
-		conn, err := net.ListenUDP("udp", cand)
-		if err == nil {
-			addr.current = cand
-			log.Println("Successfully bound to", cand.String())
-			return conn, nil
-		}
-		log.Println("Attempted to bind to", cand.String())
-	}
-	return nil, errors.New("Unable to bind to any candidates")
-}
-
-//Get returns the current address
-func (addr *Addr) Get() *net.UDPAddr {
-	return addr.current
-}
-
-func (addr *Addr) Write(conn *net.UDPConn, data []byte) {
-	if addr.current == nil {
-		for _, cand := range addr.Candidates {
-			conn.WriteToUDP(data, cand)
-		}
-	} else {
-		conn.WriteToUDP(data, addr.current)
-	}
 }
 
 //Client refers to the backend of the client containing all basic information needed by the core
@@ -50,7 +21,7 @@ type Client struct {
 
 	PeerList []*Peer
 
-	Addr Addr
+	Addr DeterminableAddr
 	conn *net.UDPConn
 }
 
@@ -59,7 +30,7 @@ func (client *Client) Initialize() error {
 	if len(client.Addr.Candidates) == 0 {
 		panic("Address candidates is empty")
 	}
-	conn, err := client.Addr.Bind()
+	conn, err := client.bind()
 	if err != nil {
 		return err
 	}
@@ -68,12 +39,13 @@ func (client *Client) Initialize() error {
 	for _, p := range client.PeerList {
 		p.init(client)
 	}
+
+	go client.start()
 	return nil
 }
 
-//Start starts listening to incoming packets
-func (client *Client) Start(stop *bool, done chan bool) {
-	for !*stop {
+func (client *Client) start() {
+	for {
 		buffer := make([]byte, 0x1000)
 		size, addr, err := client.conn.ReadFromUDP(buffer)
 		if err != nil {
@@ -81,7 +53,7 @@ func (client *Client) Start(stop *bool, done chan bool) {
 			continue
 		}
 
-		for _, peer := range client.GetPeerByAddr(addr) {
+		for _, peer := range client.getPeerByAddr(addr) {
 			id, plaintext, err := crypto.DecryptBytes(buffer[:size], peer.PublicKey, client.SecretKey)
 			if err == nil {
 				packet := &Packet{
@@ -100,11 +72,9 @@ func (client *Client) Start(stop *bool, done chan bool) {
 		}
 
 	}
-	done <- true
 }
 
-//GetPeerByAddr find a peers with the corresponding address
-func (client *Client) GetPeerByAddr(addr *net.UDPAddr) []*Peer {
+func (client *Client) getPeerByAddr(addr *net.UDPAddr) []*Peer {
 	peers := []*Peer{}
 	for _, peer := range client.PeerList {
 		for _, paddr := range peer.Addr.Candidates {
@@ -114,4 +84,27 @@ func (client *Client) GetPeerByAddr(addr *net.UDPAddr) []*Peer {
 		}
 	}
 	return peers
+}
+
+func (client *Client) bind() (*net.UDPConn, error) {
+	for _, cand := range client.Addr.Candidates {
+		conn, err := net.ListenUDP("udp", cand)
+		if err == nil {
+			client.Addr.current = cand
+			log.Println("Successfully bound to", cand.String())
+			return conn, nil
+		}
+		log.Println("Attempted to bind to", cand.String())
+	}
+	return nil, errors.New("Unable to bind to any candidates")
+}
+
+func (client *Client) writeTo(peer *Peer, data []byte) {
+	if peer.Addr.current == nil {
+		for _, cand := range peer.Addr.Candidates {
+			client.conn.WriteToUDP(data, cand)
+		}
+	} else {
+		client.conn.WriteToUDP(data, peer.Addr.current)
+	}
 }
