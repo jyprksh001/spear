@@ -8,7 +8,7 @@ import (
 
 const (
 	//FrameSize is the preset frame size for each audio data
-	FrameSize = 2880
+	FrameSize = 1920
 	//SampleRate is the preset sample rate for each audio data
 	SampleRate = 48000
 
