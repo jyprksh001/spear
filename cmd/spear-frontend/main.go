@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math"
+	"os"
 	"time"
 
 	"encoding/base64"
@@ -16,7 +18,11 @@ import (
 )
 
 func main() {
-	conf, err := config.ParseFile("/home/roger/spear/config.conf")
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s [config path]\n", os.Args[0])
+	}
+
+	conf, err := config.ParseFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
