@@ -76,7 +76,7 @@ func startAudioCallback(client *network.Client) {
 		data := audio.CompressAudio(encoder, in)
 		for _, peer := range client.PeerList {
 			peer.SendOpusData(data)
-			if packet := peer.GetAudioData(); packet != nil {
+			if packet := peer.GetAudioData(); packet != nil && len(packet) == audio.FrameSize {
 				for i := 0; i < len(packet); i++ {
 					out[i] += packet[i]
 				}
