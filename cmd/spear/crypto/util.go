@@ -3,7 +3,6 @@ package crypto
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"math/big"
 
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/curve25519"
@@ -28,18 +27,14 @@ func RandomBytes(n int) []byte {
 	return b
 }
 
-//BytesIncr treats a byte array as a big-endian number and increase it by one
-func BytesIncr(b []byte) []byte {
-	z := new(big.Int)
-	z.SetBytes(b)
-	z.Add(z, big.NewInt(1))
-	return z.Bytes()
-}
-
 func uint32ToByte(i uint32) []byte {
 	body := make([]byte, 4)
 	binary.LittleEndian.PutUint32(body, i)
 	return body
+}
+
+func byteToUint32(id []byte) uint32 {
+	return binary.LittleEndian.Uint32(id)
 }
 
 func hash512(message []byte) []byte {
