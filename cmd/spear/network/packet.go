@@ -18,7 +18,7 @@ type Packet struct {
 	ReceivedTime int64
 }
 
-const minimumBufferSize = 5
+const minimumBufferSize = 3
 const maximumFailedPacket = 20
 const maximumTimeDifference = 500
 
