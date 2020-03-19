@@ -6,12 +6,13 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/hexdiract/spear/core/crypto"
 	"github.com/hexdiract/spear/core/network"
 	"github.com/jroimartin/gocui"
 )
 
 var (
-	infoSizes = []int{2, 50, 15, 10}
+	infoSizes = []int{50, 15, 10}
 	totalSize = float32(sum(infoSizes...))
 )
 
@@ -111,15 +112,21 @@ func changeVol(layout *layout, offset float32) func(*gocui.Gui, *gocui.View) err
 func (layout *layout) printAll(gui *gocui.Gui) {
 	view, _ := gui.View("main")
 	view.Clear()
+	fmt.Fprintln(view, "  Current public key: "+base64.StdEncoding.EncodeToString(crypto.CreatePublicKey(layout.client.SecretKey)))
+	fmt.Fprintln(view, "  Up or Down arrow key to select peer.")
+	fmt.Fprintln(view, "  9 key to decrease volume of peer.")
+	fmt.Fprintln(view, "  0 key to increase volume of peer.")
+	fmt.Fprintln(view, "  Q to quit.")
+	fmt.Fprintln(view)
 	maxX, _ := gui.Size()
-	printPeer([]string{"", "Peer ID", "Status", "Vol."}, maxX, view)
+	printPeer([]string{"  Peer ID", "Status", "Vol."}, maxX, view)
 	for i, peer := range layout.client.PeerList {
-		selected := ""
+		selected := "  "
 		if i == layout.selectedPeerIndex {
-			selected = ">"
+			selected = "> "
 		}
 		vol := strconv.Itoa(int(peer.Volume*100)) + "%"
-		printPeer([]string{selected, base64.StdEncoding.EncodeToString(peer.PublicKey), "Timeout", vol}, maxX, view)
+		printPeer([]string{selected + base64.StdEncoding.EncodeToString(peer.PublicKey), "Timeout", vol}, maxX, view)
 	}
 }
 
