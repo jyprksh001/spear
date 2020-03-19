@@ -18,6 +18,7 @@ candidates = 123.123.123.123:62162, 321.321.321.231:41231
 [Peer]
 pk = KutbwzJ0d1mfrijI8r0+lfPQLdbIsa0UV7QvuTF5QXY=
 candidates = 321.123.123.312:12321
+name = Friend 1 #optional
 ```
 
 

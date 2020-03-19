@@ -81,6 +81,12 @@ func readPeerSection(section *Section, client *network.Client) error {
 				}
 				peer.Addr.Candidates = append(peer.Addr.Candidates, parsedAddr)
 			}
+		case "name":
+			value = strings.TrimSpace(value)
+			if len(value) == 0 || len(value) > 40 {
+				return errors.New("Peer name must be not be empty and within 40 characters")
+			}
+			peer.Name = value
 		default:
 			return errors.New("Key " + key + " is not recognized")
 		}

@@ -1,6 +1,7 @@
 package network
 
 import (
+	"encoding/base64"
 	"time"
 
 	"github.com/hexdiract/spear/core/audio"
@@ -12,6 +13,7 @@ type Peer struct {
 	PublicKey []byte
 	Addr      DeterminableAddr
 	Volume    float32
+	Name      string
 
 	lastPacketReceived int64
 	receiveAudioPacket func(*Packet)
@@ -51,4 +53,12 @@ func (peer *Peer) Status() string {
 		return "Timeout"
 	}
 	return "Connected"
+}
+
+//DisplayName returns the displayed name on CUI
+func (peer *Peer) DisplayName() string {
+	if len(peer.Name) == 0 {
+		peer.Name = base64.StdEncoding.EncodeToString(peer.PublicKey)
+	}
+	return peer.Name
 }
