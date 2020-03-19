@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"../crypto"
+	"github.com/hexdiract/spear/core/crypto"
 )
 
 //DeterminableAddr is a container of candidates and the current one

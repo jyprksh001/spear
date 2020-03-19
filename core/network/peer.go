@@ -1,8 +1,8 @@
 package network
 
 import (
-	"../audio"
-	"../crypto"
+	"github.com/hexdiract/spear/core/audio"
+	"github.com/hexdiract/spear/core/crypto"
 )
 
 //Peer refers to another spear user

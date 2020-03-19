@@ -9,12 +9,12 @@ import (
 
 	"encoding/base64"
 
-	"../spear/audio"
-	"../spear/crypto"
-	"../spear/network"
 	"github.com/gordonklaus/portaudio"
+	"github.com/hexdiract/spear/core/audio"
+	"github.com/hexdiract/spear/core/crypto"
+	"github.com/hexdiract/spear/core/network"
 
-	"./config"
+	"github.com/hexdiract/spear/frontend/config"
 )
 
 func main() {

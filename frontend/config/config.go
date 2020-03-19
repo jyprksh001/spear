@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"../../spear/network"
+	"github.com/hexdiract/spear/core/network"
 )
 
 //Section refers a list of content under [name]
