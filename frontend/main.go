@@ -19,7 +19,8 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %s [config path]\n", os.Args[0])
+		fmt.Println("Usage: spear [config path]")
+		return
 	}
 
 	conf, err := config.ParseFile(os.Args[1])
