@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"os"
-	"time"
 
 	"encoding/base64"
 
@@ -45,7 +43,6 @@ func main() {
 
 	go startAudioCallback(client)
 	ui.NewLayout(client)
-	time.Sleep(time.Second * math.MaxUint32)
 }
 
 func startAudioCallback(client *network.Client) {
