@@ -61,6 +61,7 @@ func (client *Client) start() {
 					RawData:      plaintext,
 					ReceivedTime: time.Now().UTC().UnixNano() / 1000000,
 				}
+				peer.lastPacketReceived = time.Now().Unix()
 				switch plaintext[0] {
 				case AudioID:
 					peer.receiveAudioPacket(packet)

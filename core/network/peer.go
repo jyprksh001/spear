@@ -1,6 +1,8 @@
 package network
 
 import (
+	"time"
+
 	"github.com/hexdiract/spear/core/audio"
 	"github.com/hexdiract/spear/core/crypto"
 )
@@ -11,6 +13,7 @@ type Peer struct {
 	Addr      DeterminableAddr
 	Volume    float32
 
+	lastPacketReceived int64
 	receiveAudioPacket func(*Packet)
 	GetAudioData       func() []float32
 	SendOpusData       func([]byte)
@@ -40,4 +43,12 @@ func (peer *Peer) init(client *Client) {
 		client.writeTo(peer, ciphertext)
 		audioPacketID++
 	}
+}
+
+//Status returns connection status from a peer
+func (peer *Peer) Status() string {
+	if time.Now().Unix()-peer.lastPacketReceived > 5 {
+		return "Timeout"
+	}
+	return "Connected"
 }

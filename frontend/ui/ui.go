@@ -126,7 +126,7 @@ func (layout *layout) printAll(gui *gocui.Gui) {
 			selected = "> "
 		}
 		vol := strconv.Itoa(int(peer.Volume*100)) + "%"
-		printPeer([]string{selected + base64.StdEncoding.EncodeToString(peer.PublicKey), "Timeout", vol}, maxX, view)
+		printPeer([]string{selected + base64.StdEncoding.EncodeToString(peer.PublicKey), peer.Status(), vol}, maxX, view)
 	}
 }
 
