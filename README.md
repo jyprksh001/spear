@@ -12,12 +12,12 @@ candidates = 0.0.0.0:3412, 192.168.0.1:54361 #ip:port
 
 [Peer]
 pk = D4VwZ+mrsWV8yyQSlty7F82HNDpNDM5AzJV1VAMC2jc= #peer’s public key
-candidates = 123.123.123.123:62162, 321.321.321.
+candidates = 123.123.123.123:62162, 321.321.321.231:41231
 #a peer can has multiple possible endpoints
 
 [Peer]
 pk = KutbwzJ0d1mfrijI8r0+lfPQLdbIsa0UV7QvuTF5QXY=
-candidates = 321.123.123.312:
+candidates = 321.123.123.312:12321
 ```
 
 
