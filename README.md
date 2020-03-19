@@ -4,6 +4,7 @@ Spear is a VoIP program that doesn’t require any central server. It uses a CUI
 
 Example config.conf:
 
+```
 [Client]
 sk = g7suVU4IhGd8slx5q618dz0NBgMujeWSu1r2eKHJBSg= #user’s secret key
 candidates = 0.0.0.0:3412, 192.168.0.1:54361 #ip:port
@@ -17,6 +18,7 @@ candidates = 123.123.123.123:62162, 321.321.321.
 [Peer]
 pk = KutbwzJ0d1mfrijI8r0+lfPQLdbIsa0UV7QvuTF5QXY=
 candidates = 321.123.123.312:
+```
 
 
 
