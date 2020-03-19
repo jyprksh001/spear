@@ -15,6 +15,7 @@ import (
 	"github.com/hexdiract/spear/core/network"
 
 	"github.com/hexdiract/spear/frontend/config"
+	"github.com/hexdiract/spear/frontend/ui"
 )
 
 func main() {
@@ -43,6 +44,7 @@ func main() {
 	log.Println("Starting client")
 
 	go startAudioCallback(client)
+	ui.NewLayout(client)
 	time.Sleep(time.Second * math.MaxUint32)
 }
 
@@ -79,7 +81,7 @@ func startAudioCallback(client *network.Client) {
 			peer.SendOpusData(data)
 			if packet := peer.GetAudioData(); packet != nil && len(packet) == audio.FrameSize {
 				for i := 0; i < len(packet); i++ {
-					out[i] += packet[i]
+					out[i] += packet[i] * peer.Volume
 				}
 			}
 		}

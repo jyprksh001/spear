@@ -9,6 +9,7 @@ import (
 type Peer struct {
 	PublicKey []byte
 	Addr      DeterminableAddr
+	Volume    float32
 
 	receiveAudioPacket func(*Packet)
 	GetAudioData       func() []float32
@@ -19,6 +20,8 @@ func (peer *Peer) init(client *Client) {
 	audioBuffer := PacketBuffer{}
 	opusDecoder := audio.NewDecoder()
 	audioPacketID := uint32(0)
+
+	peer.Volume = 1
 
 	peer.receiveAudioPacket = audioBuffer.Push
 	peer.GetAudioData = func() []float32 {
