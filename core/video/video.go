@@ -37,7 +37,7 @@ func Screenshot() ([]*image.YCbCr, error) {
 
 		img, _ := fitNearestRatio(screenshot)
 
-		images = append(images, rgbToIYUV(img))
+		images = append(images, RGBToYUV(img))
 	}
 	return images, nil
 }
