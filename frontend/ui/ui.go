@@ -2,152 +2,112 @@ package ui
 
 import (
 	"encoding/base64"
-	"fmt"
-	"log"
+	"math"
 	"strconv"
+	"time"
 
+	"github.com/gdamore/tcell"
 	"github.com/hexdiract/spear/core/crypto"
 	"github.com/hexdiract/spear/core/network"
-	"github.com/jroimartin/gocui"
-)
-
-var (
-	infoSizes = []int{50, 15, 10}
-	totalSize = float32(sum(infoSizes...))
 )
 
 type layout struct {
 	client            *network.Client
 	selectedPeerIndex int
+	finish            bool
 }
 
 //NewLayout creates a new CUI layout
 func NewLayout(client *network.Client) {
 	layout := &layout{
-		client: client,
+		client:            client,
+		selectedPeerIndex: 0,
 	}
-
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	screen, err := tcell.NewScreen()
 	if err != nil {
-		log.Panicln(err)
+		panic(err)
 	}
-	defer g.Close()
-
-	g.SetManagerFunc(layout.updateLayout)
-
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		log.Panicln(err)
+	if err := screen.Init(); err != nil {
+		panic(err)
 	}
-
-	if err := g.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
-		log.Panicln(err)
+	go layout.handleEvent(&screen)
+	for !layout.finish {
+		layout.tick(&screen)
+		screen.Show()
+		time.Sleep(time.Millisecond * 50)
 	}
-
-	if err := g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, moveIndex(layout, 1)); err != nil {
-		log.Panicln(err)
-	}
-
-	if err := g.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, moveIndex(layout, -1)); err != nil {
-		log.Panicln(err)
-	}
-
-	if err := g.SetKeybinding("", '0', gocui.ModNone, changeVol(layout, 0.1)); err != nil {
-		log.Panicln(err)
-	}
-
-	if err := g.SetKeybinding("", '9', gocui.ModNone, changeVol(layout, -0.1)); err != nil {
-		log.Panicln(err)
-	}
-
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Panicln(err)
-	}
-
-	g.Update(layout.updateLayout)
+	screen.Fini()
 }
 
-func (layout *layout) updateLayout(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
-	maxX--
-	if _, err := g.SetView("main", 0, 0, maxX, maxY-1); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		layout.printAll(g)
-	}
-	return nil
-}
-
-func quit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
-}
-
-func moveIndex(layout *layout, offset int) func(*gocui.Gui, *gocui.View) error {
-	return func(gui *gocui.Gui, view *gocui.View) error {
-		layout.selectedPeerIndex += offset
-		layout.selectedPeerIndex %= len(layout.client.PeerList)
-		if layout.selectedPeerIndex < 0 {
-			layout.selectedPeerIndex += len(layout.client.PeerList)
-		}
-		layout.printAll(gui)
-		return nil
-	}
-}
-
-func changeVol(layout *layout, offset float32) func(*gocui.Gui, *gocui.View) error {
-	return func(gui *gocui.Gui, view *gocui.View) error {
-		peer := layout.client.PeerList[layout.selectedPeerIndex]
-		peer.Volume += offset
-		if peer.Volume > 2 {
-			peer.Volume = 2
-		}
-		if peer.Volume < 0 {
-			peer.Volume = 0
-		}
-		layout.printAll(gui)
-		return nil
-	}
-}
-
-func (layout *layout) printAll(gui *gocui.Gui) {
-	view, _ := gui.View("main")
-	view.Clear()
-	fmt.Fprintln(view, "  Current public key: "+base64.StdEncoding.EncodeToString(crypto.CreatePublicKey(layout.client.SecretKey)))
-	fmt.Fprintln(view, "  Up or Down arrow key to select peer.")
-	fmt.Fprintln(view, "  9 key to decrease volume of peer.")
-	fmt.Fprintln(view, "  0 key to increase volume of peer.")
-	fmt.Fprintln(view, "  Q to quit.")
-	fmt.Fprintln(view)
-	maxX, _ := gui.Size()
-	printPeer([]string{"  Peer ID", "Status", "Vol."}, maxX, view)
+func (layout *layout) tick(screen *tcell.Screen) {
+	(*screen).Clear()
+	writer := &writer{screen: screen}
+	writer.writeAt("  Current public key: " + base64.StdEncoding.EncodeToString(crypto.CreatePublicKey(layout.client.SecretKey)))
+	writer.nextLine()
+	writer.writeAt("  Up or Down arrow key to select peer.")
+	writer.nextLine()
+	writer.writeAt("  9 key to decrease volume of peer.")
+	writer.nextLine()
+	writer.writeAt("  0 key to increase volume of peer.")
+	writer.nextLine()
+	writer.writeAt("  Q to quit.")
+	writer.nextLine()
+	writer.nextLine()
+	writer.x += 2
+	writer.writeAt("Peer")
+	writer.x += 50
+	writer.writeAt("Status")
+	writer.x += 15
+	writer.writeAt("Volume")
+	writer.x += 10
+	writer.nextLine()
 	for i, peer := range layout.client.PeerList {
-		selected := "  "
 		if i == layout.selectedPeerIndex {
-			selected = "> "
+			writer.writeAt(">")
 		}
-		vol := strconv.Itoa(int(peer.Volume*100)) + "%"
-		printPeer([]string{selected + peer.DisplayName(), peer.Status(), vol}, maxX, view)
+		writer.x += 2
+		writer.writeAt(peer.DisplayName())
+		writer.x += 50
+		writer.writeAt(peer.Status())
+		writer.x += 15
+		vol := strconv.Itoa(int(math.Round(float64(peer.Volume*10)))*10) + "%"
+		writer.writeAt(vol)
+		writer.nextLine()
 	}
 }
 
-func printPeer(info []string, width int, view *gocui.View) {
-	pattern := []string{}
-	for _, v := range infoSizes {
-		w := int(float32(v) / totalSize * float32(width))
-		pattern = append(pattern, "%-"+strconv.Itoa(w)+"s")
+func (layout *layout) handleEvent(screen *tcell.Screen) {
+	for event := (*screen).PollEvent(); event != nil; event = (*screen).PollEvent() {
+		if keyEvent, ok := event.(*tcell.EventKey); ok {
+			layout.handleKey(screen, keyEvent)
+		}
 	}
-	for i, v := range info {
-		fmt.Fprintf(view, pattern[i], v)
-	}
-	fmt.Fprintln(view)
 }
 
-func sum(input ...int) int {
-	sum := 0
-
-	for _, i := range input {
-		sum += i
+func (layout *layout) handleKey(screen *tcell.Screen, event *tcell.EventKey) {
+	switch event.Rune() {
+	case 'q':
+		layout.finish = true
+	case '9':
+		peer := layout.client.PeerList[layout.selectedPeerIndex]
+		if peer.Volume > 0 {
+			peer.Volume -= 0.1
+		}
+	case '0':
+		peer := layout.client.PeerList[layout.selectedPeerIndex]
+		if peer.Volume < 2 {
+			peer.Volume += 0.1
+		}
+	}
+	switch event.Key() {
+	case tcell.KeyCtrlC:
+		layout.finish = true
+	case tcell.KeyUp:
+		layout.selectedPeerIndex++
+	case tcell.KeyDown:
+		layout.selectedPeerIndex--
 	}
 
-	return sum
+	m := len(layout.client.PeerList)
+	layout.selectedPeerIndex = (layout.selectedPeerIndex + m) % m
 }

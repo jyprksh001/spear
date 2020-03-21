@@ -66,7 +66,7 @@ func startAudioCallback(client *network.Client) {
 
 	for {
 		if err := stream.Read(); err != nil {
-			log.Println("Error while reading stream: " + err.Error())
+			//log.Println("Error while reading stream: " + err.Error())
 		}
 
 		for i := 0; i < len(out); i++ {
