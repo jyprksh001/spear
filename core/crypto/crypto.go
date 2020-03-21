@@ -13,7 +13,7 @@ import (
 //NonceSize is the size of nonce used by EncryptBytes
 const NonceSize = chacha20poly1305.NonceSize
 
-//EncryptBytes creates an encrypted packet and conumes the plaintext storage
+//EncryptBytes creates an encrypted packet and consumes the plaintext storage
 func EncryptBytes(otherPk, userSk, plaintext []byte, packetID uint32) []byte {
 	id := uint32ToByte(packetID)
 
@@ -29,7 +29,7 @@ func EncryptBytes(otherPk, userSk, plaintext []byte, packetID uint32) []byte {
 	return append(id, ciphertext...)
 }
 
-//DecryptBytes takes an encrypted packet and reutrns (packet id, plaintext)
+//DecryptBytes takes an encrypted packet and returns (packet id, plaintext)
 func DecryptBytes(c, otherPk, userSk []byte) (uint32, []byte, error) {
 	reader := bytes.NewReader(c)
 	id := make([]byte, 4)
