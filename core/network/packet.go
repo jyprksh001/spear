@@ -20,7 +20,7 @@ type Packet struct {
 
 const minimumBufferSize = 3
 const maximumFailedPacket = 20
-const maximumTimeDifference = 500
+const maximumTimeDifference = 1500
 
 //PacketBuffer is a queue of packet, handles packet ordering internally
 type PacketBuffer struct {
