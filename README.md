@@ -20,6 +20,12 @@ pk = KutbwzJ0d1mfrijI8r0+lfPQLdbIsa0UV7QvuTF5QXY=
 candidates = 321.123.123.312:12321
 name = Friend 1 #optional
 ```
+
+# How to build
+```
+go build -o spear github.com/hexdiract/spear/frontend
+```
+
 # TODO:
 Screen sharing
 
