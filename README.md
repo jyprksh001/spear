@@ -1,6 +1,6 @@
 # SPEAR - Simple, P2P, Encrypted And Real-Time
 
-Spear is a VoIP program that doesn’t require any central server. It uses a CUI interface so you can run it on a terminal or even tty if you want. Xorg is only required if you want the screen sharing feature. Packets are encrypted using ChaCha20Poly1305 and shared secrets are generated using a pre-shared public key from a peer and the user’s own secret, specified in a config file.
+Spear is a VoIP program that doesn’t require any central server. It uses a CUI interface so you can run it on a terminal or even tty if you want. Packets are encrypted using ChaCha20Poly1305 and shared secrets are generated using a pre-shared public key from a peer and the user’s own secret, specified in a config file.
 
 Example config.conf:
 
@@ -20,6 +20,7 @@ pk = KutbwzJ0d1mfrijI8r0+lfPQLdbIsa0UV7QvuTF5QXY=
 candidates = 321.123.123.312:12321
 name = Friend 1 #optional
 ```
-
+# TODO:
+Screen sharing
 
 
